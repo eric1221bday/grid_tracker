@@ -10,7 +10,6 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
-  observation_synchronizer
   roscpp
   sensor_msgs
   tf2
@@ -108,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES grid_tracker
-  CATKIN_DEPENDS cv_bridge image_transport observation_synchronizer roscpp sensor_msgs tf2
+  CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs tf2
 #  DEPENDS system_lib
 )
 

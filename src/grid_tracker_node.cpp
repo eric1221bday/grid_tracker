@@ -3,8 +3,6 @@
 //
 
 #include <ros/ros.h>
-#include <ros/subscriber.h>
-#include <ros/publisher.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Range.h>
@@ -22,7 +20,7 @@ private:
     message_filters::Subscriber<sensor_msgs::Range>range_sub_;
     image_transport::SubscriberFilter image_sub_;
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Imu,
-            sensor_msgs::Image, sensor_msgs::Range> tracker_policy;
+            sensor_msgs::ImageConstPtr&, sensor_msgs::Range> tracker_policy;
     message_filters::Synchronizer<tracker_policy> synchronizer_;
     image_transport::ImageTransport it_;
 
@@ -31,41 +29,25 @@ public:
         nh_(nh),
         it_(nh),
         imu_sub_(nh, "imu", 1),
-        range_sub_(nh, "range", 1)
+        range_sub_(nh, "range", 1),
+        image_sub_(it_, "image", 1),
+        synchronizer_(tracker_policy(10), imu_sub_, image_sub_, range_sub_)
     {
         initializeCallbacks();
     }
 
     void initializeCallbacks() {
-        synchronizer_ = synchronizer_(tracker_policy(10), imu_sub_,
-                      image_sub_, range_sub_);
-        imu_sub_ = nh_.subscribe("imu", 100, &GridTrackerWrapper::imu_callback, this);
-        image_sub_ = it_.subscribe("image", 100, &GridTrackerWrapper::image_callback, this);
-        range_sub_ = nh_.subscribe("range", 100, &GridTrackerWrapper::range_callback, this);
+        synchronizer_.registerCallback(boost::bind(&GridTrackerWrapper::topics_callback, this, _1, _2, _3));
     }
 
-    void imu_callback(const sensor_msgs::Imu::ConstPtr &msg) {
-        MsgVariantsPtr p = std::make_shared < MsgVariants > (msg);
-        MVGenericObs::Ptr q = MVGenericObs::Ptr(
-                new MVGenericObs(p, "IMU", GridTracker::IMU,
-                                 msg->header.stamp.toSec()));
-        synchronizer_->addMessage(q);
-    }
-
-    void image_callback(const sensor_msgs::Image::ConstPtr &msg) {
-        MsgVariantsPtr p = std::make_shared < MsgVariants > (msg);
-        MVGenericObs::Ptr q = MVGenericObs::Ptr(
-                new MVGenericObs(p, "IMAGE", GridTracker::IMAGE,
-                                 msg->header.stamp.toSec()));
-        synchronizer_->addMessage(q);
-    }
-
-    void range_callback(const sensor_msgs::Range::ConstPtr &msg) {
-        MsgVariantsPtr p = std::make_shared < MsgVariants > (msg);
-        MVGenericObs::Ptr q = MVGenericObs::Ptr(
-                new MVGenericObs(p, "RANGE", GridTracker::RANGE,
-                                 msg->header.stamp.toSec()));
-        synchronizer_->addMessage(q);
+    void topics_callback(const sensor_msgs::Imu imuMsg, const sensor_msgs::ImageConstPtr& imageMsg, const sensor_msgs::Range rangeMsg) {
+        cv_bridge::CvImageConstPtr cv_ptr;
+        try {
+            cv_ptr = cv_bridge::toCvShare(imageMsg, "bgr8");
+        } catch (cv_bridge::Exception& e) {
+            throw std::runtime_error(
+                    std::string("cv_bridge exception: ") + std::string(e.what()));
+        }
     }
 };
 
