@@ -1,0 +1,12 @@
+<launch>
+    <arg name="output" default="screen"/>
+    
+    <node name="gazebo_corrections" pkg="hallway_navigator" type="gazebo_corrections.py" />
+
+    <node pkg="grid_tracker" name="grid_tracker_node" type="grid_tracker_node" output="$(arg output)">
+        <remap from="grid_tracker_node/imu" to="/mavros/imu/data"/>
+        <remap from="grid_tracker_node/image" to="/camera1/image_raw"/>
+        <remap from="grid_tracker_node/range" to="/terarangerone"/>
+    </node>
+
+</launch>
