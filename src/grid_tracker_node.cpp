@@ -18,14 +18,14 @@
 class GridTrackerWrapper {
 private:
     ros::NodeHandle nh_;
+    image_transport::ImageTransport it_;
     message_filters::Subscriber<sensor_msgs::Imu> imu_sub_;
     message_filters::Subscriber<sensor_msgs::Range>range_sub_;
     image_transport::SubscriberFilter image_sub_;
     image_transport::Publisher image_pub_;
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Imu,
             sensor_msgs::Image, sensor_msgs::Range> tracker_policy;
-    message_filters::Synchronizer<tracker_policy> synchronizer_;
-    image_transport::ImageTransport it_;
+    message_filters::Synchronizer<tracker_policy> synchronizer_;  
 
 public:
     GridTrackerWrapper(ros::NodeHandle nh) :
